@@ -13,6 +13,12 @@ typedef struct matrix {
 	int** data;
 } matrix;
 
+int MIN(int a, int b) {
+    if (a <= b)
+        return a;
+    return b;
+}
+
 // reads matrix input from filename and stores matrices in *A and *B
 int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 	FILE* mfile = fopen(filename, "r");
@@ -53,13 +59,16 @@ int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 	B->data = (int**) malloc(sizeof(int*) * B->height);
 
 	// init line reading for matrix data
-	char* line = NULL;
-	size_t line_len = 0;
+	size_t line_len = A->width * 2 + 64;
+	char* base = malloc(line_len);
+	char* line;
 
+	// read in matrix A
 	for (int i = 0; i < A->height; i++) {
 		A->data[i] = (int*) malloc(sizeof(int) * A->width);
 
-		line_sz = getline(&line, &line_len, mfile);
+		line_sz = getline(&base, &line_len, mfile);
+		line = base;
 
 		for (int j = 0; j < A->width; j++) {
 			first_tok = strsep(&line, " ");
@@ -67,10 +76,17 @@ int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 		}
 	}
 
+	// gross, i know. but reset for matrix B
+	free(base);
+	line_len = B->width * 2 + 64;
+	base = malloc(line_len);
+
+	// read in matrix B
 	for (int i = 0; i < B->height; i++) {
 		B->data[i] = (int*) malloc(sizeof(int) * B->width);
 
-		line_sz = getline(&line, &line_len, mfile);
+		line_sz = getline(&base, &line_len, mfile);
+		line = base;
 
 		for (int j = 0; j < B->width; j++) {
 			first_tok = strsep(&line, " ");
@@ -78,6 +94,7 @@ int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 		}
 	}
 
+	free(base);
 
 	// build C
 	C->height = A->height;
@@ -107,10 +124,27 @@ int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 }
 
 void multiply(matrix* A, matrix* B, matrix* C) {
-	for (int i = 0; i < B->width; i++) {
-		for (int j = 0; j < A->height; j++) {
-			for (int k = 0; k < A->width; k++) {
-				C->data[i][j] += A->data[i][k] * B->data[k][j];
+	int block_sz = MIN(64, A->height);
+
+	// for each row of blocks in A
+	for (int i = 0; i < A->height / block_sz; i++) {
+		// for each column of blocks in B
+		for (int j = 0; j < B->width / block_sz; j++) {
+			// for each column of blocks in A and row of blocks in B
+			for (int k = 0; k < A->width / block_sz; k++) {
+				// for each element in C's current block
+				for (int l = 0; l < block_sz; l++) {
+					for (int m = 0; m < block_sz; m++) {
+						// calculate the element using A and B!
+						for (int n = 0; n < block_sz; n++) {
+							// printf("%d, %d, %d, %d, %d\n", i, j, k, l, m);
+							// printf("(%d, %d)\n", i*block_sz+l, j*block_sz+l);
+							// printf("\t(%d, %d)\n", i*block_sz+l, k*block_sz+m);
+							// printf("\t(%d, %d)\n", k*block_sz+m, j*block_sz+l);
+							C->data[i*block_sz+l][j*block_sz+m] += A->data[i*block_sz+l][k*block_sz+n] * B->data[k*block_sz+n][j*block_sz+m];
+						}
+					}
+				}
 			}
 		}
 	}
@@ -118,9 +152,14 @@ void multiply(matrix* A, matrix* B, matrix* C) {
 
 // first two lines indicates dimensions of matrices
 int main(int argc, char** argv) {
-	if (argc != 2) {
-		printf("Usage: ./mm <txt file with matrices>\n");
+	if (argc != 2 && argc != 3) {
+		printf("Usage: ./mm <txt file with matrices> [outfile]\n");
 		return 1;
+	}
+
+	FILE* outfile = NULL;
+	if (argc == 3) {
+		outfile = fopen(argv[2], "w");
 	}
 
 	matrix A;
@@ -134,15 +173,29 @@ int main(int argc, char** argv) {
 
 	multiply(&A, &B, &C);
 
-	// print_matrix(C);
-	printf("\nMATRIX C\n");
-	for (int i = 0; i < C.height; i++) {
-		for (int j = 0; j < C.width; j++) {
-			printf("%d\t", C.data[i][j]);
-		}
-		printf("\n");
-	}
+	// print to outfile or terminal
+	// if (outfile) {
+	// 	char outbuf[64];
 
+	// 	for (int i = 0; i < C.height; i++) {
+	// 		for (int j = 0; j < C.width; j++) {
+	// 			sprintf(outbuf, "%d\t", C.data[i][j]);
+	// 			fwrite(outbuf, strlen(outbuf), 1, outfile);
+	// 		}
+	// 		sprintf(outbuf, "\n");
+	// 		fwrite(outbuf, strlen(outbuf), 1, outfile);
+	// 	}
+	// 	fclose(outfile);
+	// } 
+	// else {
+	// 	printf("\nMATRIX C\n");
+	// 	for (int i = 0; i < C.height; i++) {
+	// 		for (int j = 0; j < C.width; j++) {
+	// 			printf("%d\t", C.data[i][j]);
+	// 		}
+	// 		printf("\n");
+	// 	}
+	// }	
 
 	return 0;
 }
