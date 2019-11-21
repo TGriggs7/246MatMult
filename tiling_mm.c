@@ -137,11 +137,8 @@ void multiply(matrix* A, matrix* B, matrix* C) {
 					for (int m = 0; m < block_sz; m++) {
 						// calculate the element using A and B!
 						for (int n = 0; n < block_sz; n++) {
-							// printf("%d, %d, %d, %d, %d\n", i, j, k, l, m);
-							// printf("(%d, %d)\n", i*block_sz+l, j*block_sz+l);
-							// printf("\t(%d, %d)\n", i*block_sz+l, k*block_sz+m);
-							// printf("\t(%d, %d)\n", k*block_sz+m, j*block_sz+l);
-							C->data[i*block_sz+l][j*block_sz+m] += A->data[i*block_sz+l][k*block_sz+n] * B->data[k*block_sz+n][j*block_sz+m];
+							C->data[i*block_sz+l][j*block_sz+m] += 
+								A->data[i*block_sz+l][k*block_sz+n] * B->data[k*block_sz+n][j*block_sz+m];
 						}
 					}
 				}
