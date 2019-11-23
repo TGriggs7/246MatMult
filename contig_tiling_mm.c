@@ -117,6 +117,7 @@ int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 
 void multiply(matrix* A, matrix* B, matrix* C) {
 	int block_sz = MIN(64, A->height);
+	int block_dim = A->height/block_sz;
 
 	// for each row of blocks in A
 	for (int i = 0; i < A->height / block_sz; i++) {
@@ -129,14 +130,34 @@ void multiply(matrix* A, matrix* B, matrix* C) {
 					for (int m = 0; m < block_sz; m++) {
 						// calculate the element using A and B!
 						for (int n = 0; n < block_sz; n++) {
-							C->data[i*block_sz+l][j*block_sz+m] += 
-								A->data[i*block_sz+l][k*block_sz+n] * B->data[k*block_sz+n][j*block_sz+m];
+							C->data[i*block_dim+j][l*block_sz+m] +=
+								A->data[i*block_dim+k][l*block_sz+n] * B->data[k*block_dim+j][n*block_sz+m];
 						}
 					}
 				}
 			}
 		}
 	}
+
+	// // for each row of blocks in A
+	// for (int i = 0; i < A->height / block_sz; i++) {
+	// 	// for each column of blocks in B
+	// 	for (int j = 0; j < B->width / block_sz; j++) {
+	// 		// for each column of blocks in A and row of blocks in B
+	// 		for (int k = 0; k < A->width / block_sz; k++) {
+	// 			// for each element in C's current block
+	// 			for (int l = 0; l < block_sz; l++) {
+	// 				for (int m = 0; m < block_sz; m++) {
+	// 					// calculate the element using A and B!
+	// 					for (int n = 0; n < block_sz; n++) {
+	// 						C->data[i*block_sz+l][j*block_sz+m] += 
+	// 							A->data[i*block_sz+l][k*block_sz+n] * B->data[k*block_sz+n][j*block_sz+m];
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 }
 
 // first two lines indicates dimensions of matrices
@@ -162,29 +183,18 @@ int main(int argc, char** argv) {
 
 	multiply(&A, &B, &C);
 
-	// print to outfile or terminal
-	if (outfile) {
-		char outbuf[64];
-
-		for (int i = 0; i < C.height; i++) {
-			for (int j = 0; j < C.width; j++) {
-				sprintf(outbuf, "%d\t", C.data[i][j]);
-				fwrite(outbuf, strlen(outbuf), 1, outfile);
-			}
-			sprintf(outbuf, "\n");
-			fwrite(outbuf, strlen(outbuf), 1, outfile);
-		}
-		fclose(outfile);
-	} 
-	else {
-		printf("\nMATRIX C\n");
-		for (int i = 0; i < C.height; i++) {
-			for (int j = 0; j < C.width; j++) {
-				printf("%d\t", C.data[i][j]);
-			}
-			printf("\n");
-		}
-	}	
+	// int block_sz = MIN(64, A.height);
+	// int block_dim = A.height/block_sz;
+	// for (int i = 0; i < block_dim; i++) {
+	// 	for (int j = 0; j < block_sz; j++) {
+	// 		for (int k = 0; k < block_dim; k++) {
+	// 			for (int l = 0; l < block_sz; l++) {
+	// 				printf("%d\t", C.data[i*block_dim+k][j*block_sz+l]);
+	// 			}
+	// 		}
+	// 		printf("\n");
+	// 	}
+	// }	
 
 	return 0;
 }

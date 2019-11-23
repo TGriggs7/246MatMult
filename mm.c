@@ -151,28 +151,28 @@ int main(int argc, char** argv) {
 	multiply(&A, &B, &C);
 
 	// print to outfile or terminal
-	// if (outfile) {
-	// 	char outbuf[64];
+	if (outfile) {
+		char outbuf[64];
 
-	// 	for (int i = 0; i < C.height; i++) {
-	// 		for (int j = 0; j < C.width; j++) {
-	// 			sprintf(outbuf, "%d\t", C.data[i][j]);
-	// 			fwrite(outbuf, strlen(outbuf), 1, outfile);
-	// 		}
-	// 		sprintf(outbuf, "\n");
-	// 		fwrite(outbuf, strlen(outbuf), 1, outfile);
-	// 	}
-	// 	fclose(outfile);
-	// } 
-	// else {
-	// 	printf("\nMATRIX C\n");
-	// 	for (int i = 0; i < C.height; i++) {
-	// 		for (int j = 0; j < C.width; j++) {
-	// 			printf("%d\t", C.data[i][j]);
-	// 		}
-	// 		printf("\n");
-	// 	}
-	// }	
+		for (int i = 0; i < C.height; i++) {
+			for (int j = 0; j < C.width; j++) {
+				sprintf(outbuf, "%d\t", C.data[i][j]);
+				fwrite(outbuf, strlen(outbuf), 1, outfile);
+			}
+			sprintf(outbuf, "\n");
+			fwrite(outbuf, strlen(outbuf), 1, outfile);
+		}
+		fclose(outfile);
+	} 
+	else {
+		printf("\nMATRIX C\n");
+		for (int i = 0; i < C.height; i++) {
+			for (int j = 0; j < C.width; j++) {
+				printf("%d\t", C.data[i][j]);
+			}
+			printf("\n");
+		}
+	}	
 
 	return 0;
 }
