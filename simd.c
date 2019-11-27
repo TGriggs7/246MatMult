@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "immintrin.h"
 
 typedef struct matrix {
 	int height;
@@ -97,11 +98,16 @@ int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 		line = base;
 		for (int j = 0; j < B->width; j++) {
 			first_tok = strsep(&line, " ");
-			B->data[i/block_sz*block_dim + j/block_sz][(i%block_sz)*block_sz+j%block_sz] = 
+			// B->data[i/block_sz*block_dim + j/block_sz][(i%block_sz)*block_sz+j%block_sz] = 
+			// 	atoi(first_tok);
+
+			// within block -> whichever column it is, that's the row
+			// row: 
+			// column:
+			B->data[i/block_sz*block_dim + j/block_sz][(j%block_sz)*block_sz+i%block_sz] = 
 				atoi(first_tok);
 		}
 	}
-
 	free(base);
 
 	// build C
@@ -115,23 +121,79 @@ int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 	return 0;
 }
 
+// void multiply(matrix* A, matrix* B, matrix* C) {
+// 	int block_sz = MIN(64, A->height);
+// 	int block_dim = A->height/block_sz;
+// 	int A_block;
+// 	int B_block;
+// 	int C_block;
+// 	int A_row;
+// 	int B_row;
+// 	int C_row;
+
+// 	// for each row of blocks in A
+// 	for (int i = 0; i < A->height / block_sz; i++) {
+// 		// for each column of blocks in B
+// 		for (int j = 0; j < B->width / block_sz; j++) {
+// 			C_block = i*block_dim + j;
+// 			// for each column of blocks in A and row of blocks in B
+// 			for (int k = 0; k < A->width / block_sz; k++) {
+// 				A_block = i*block_dim + k;
+// 				B_block = k*block_dim + j;
+// 				// for each element in C's current block
+// 				for (int l = 0; l < block_sz; l++) {
+// 					A_row = l*block_sz;
+// 					C_row = A_row;
+// 					for (int m = 0; m < block_sz; m++) {
+// 						// calculate the element using A and B!
+// 						for (int n = 0; n < block_sz; n++) {
+// 							B_row = n*block_sz;
+// 							C->data[C_block][C_row+m] +=
+// 								A->data[A_block][A_row+n] * B->data[B_block][B_row+m];
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// }
+
 void multiply(matrix* A, matrix* B, matrix* C) {
 	int block_sz = MIN(64, A->height);
 	int block_dim = A->height/block_sz;
+	int* A_block;
+	int* B_block;
+	int* C_block;
+	int A_row;
+	int B_row;
+	int C_idx;
 
 	// for each row of blocks in A
 	for (int i = 0; i < A->height / block_sz; i++) {
 		// for each column of blocks in B
 		for (int j = 0; j < B->width / block_sz; j++) {
+			C_block = C->data[i*block_dim + j];
 			// for each column of blocks in A and row of blocks in B
 			for (int k = 0; k < A->width / block_sz; k++) {
+				A_block = A->data[i*block_dim + k];
+				B_block = B->data[k*block_dim + j];
 				// for each element in C's current block
 				for (int l = 0; l < block_sz; l++) {
+					A_row = l*block_sz;
 					for (int m = 0; m < block_sz; m++) {
+						B_row = m*block_sz;
+						C_idx = l*block_sz+m;
 						// calculate the element using A and B!
 						for (int n = 0; n < block_sz; n++) {
-							C->data[i*block_dim+j][l*block_sz+m] +=
-								A->data[i*block_dim+k][l*block_sz+n] * B->data[k*block_dim+j][n*block_sz+m];
+							C_block[C_idx] +=
+								A_block[A_row+n] * B_block[B_row+n];							
+
+							// __m128i result = _mm_mullo_epi32(*((__m128i*) &A_block[A_row+n]), *((__m128i*) &B_block[B_row+n]));
+
+							// int* result_int = (int*) &result;
+							// for (int i = 0; i < 4; i++) {
+							// 	C_block[C_idx] += result_int[i];
+							// }
 						}
 					}
 				}
@@ -163,18 +225,18 @@ int main(int argc, char** argv) {
 
 	multiply(&A, &B, &C);
 
-	int block_sz = MIN(64, A.height);
-	int block_dim = A.height/block_sz;
-	for (int i = 0; i < block_dim; i++) {
-		for (int j = 0; j < block_sz; j++) {
-			for (int k = 0; k < block_dim; k++) {
-				for (int l = 0; l < block_sz; l++) {
-					printf("%d\t", C.data[i*block_dim+k][j*block_sz+l]);
-				}
-			}
-			printf("\n");
-		}
-	}	
+	// int block_sz = MIN(64, A.height);
+	// int block_dim = A.height/block_sz;
+	// for (int i = 0; i < block_dim; i++) {
+	// 	for (int j = 0; j < block_sz; j++) {
+	// 		for (int k = 0; k < block_dim; k++) {
+	// 			for (int l = 0; l < block_sz; l++) {
+	// 				printf("%d\t", C.data[i*block_dim+k][j*block_sz+l]);
+	// 			}
+	// 		}
+	// 		printf("\n");
+	// 	}
+	// }	
 
 	return 0;
 }
