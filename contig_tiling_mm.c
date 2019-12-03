@@ -97,11 +97,10 @@ int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 		line = base;
 		for (int j = 0; j < B->width; j++) {
 			first_tok = strsep(&line, " ");
-			B->data[i/block_sz*block_dim + j/block_sz][(i%block_sz)*block_sz+j%block_sz] = 
+			B->data[i/block_sz*block_dim + j/block_sz][(j%block_sz)*block_sz+i%block_sz] = 
 				atoi(first_tok);
 		}
 	}
-
 	free(base);
 
 	// build C
@@ -131,7 +130,7 @@ void multiply(matrix* A, matrix* B, matrix* C) {
 						// calculate the element using A and B!
 						for (int n = 0; n < block_sz; n++) {
 							C->data[i*block_dim+j][l*block_sz+m] +=
-								A->data[i*block_dim+k][l*block_sz+n] * B->data[k*block_dim+j][n*block_sz+m];
+								A->data[i*block_dim+k][l*block_sz+n] * B->data[k*block_dim+j][m*block_sz+n];
 						}
 					}
 				}
@@ -163,26 +162,18 @@ int main(int argc, char** argv) {
 
 	multiply(&A, &B, &C);
 
-	int block_sz = MIN(64, A.height);
-	int block_dim = A.height/block_sz;
-	for (int i = 0; i < block_dim; i++) {
-		for (int j = 0; j < block_sz; j++) {
-			for (int k = 0; k < block_dim; k++) {
-				for (int l = 0; l < block_sz; l++) {
-					printf("%d\t", C.data[i*block_dim+k][j*block_sz+l]);
-				}
-			}
-			printf("\n");
-		}
-	}	
+	// int block_sz = MIN(64, A.height);
+	// int block_dim = A.height/block_sz;
+	// for (int i = 0; i < block_dim; i++) {
+	// 	for (int j = 0; j < block_sz; j++) {
+	// 		for (int k = 0; k < block_dim; k++) {
+	// 			for (int l = 0; l < block_sz; l++) {
+	// 				printf("%d\t", C.data[i*block_dim+k][j*block_sz+l]);
+	// 			}
+	// 		}
+	// 		printf("\n");
+	// 	}
+	// }	
 
 	return 0;
 }
-
-
-
-
-
-
-
-
