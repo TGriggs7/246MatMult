@@ -134,6 +134,7 @@ int main(int argc, char** argv) {
 
 	multiply(&A, &B, &C);
 
+	/*
 	// print to outfile or terminal
 	if (outfile) {
 		char outbuf[64];
@@ -157,6 +158,7 @@ int main(int argc, char** argv) {
 			printf("\n");
 		}
 	}	
+	*/
 
 	return 0;
 }

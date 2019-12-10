@@ -123,12 +123,14 @@ int main(int argc, char** argv) {
 		A->data, A->height, B->data, B->height, 
 		1, C->data, C->height);
 
+	/*
 	for (int i = 0; i < C->height; i++) {
 		for (int j = 0; j < C->width; j++) {
 			printf("%f ", C->data[i*C->height+j]);
 		}
 		printf("\n");
 	}
+	*/
 
 	return 0;
 }

@@ -7,15 +7,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <cblas.h>
+#include "lapacke.h"
 
 typedef struct matrix {
 	int height;
 	int width;
-	float* data;
+	double* data;
 } matrix;
 
 // reads matrix input from filename and stores matrices in *A and *B
-int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
+int build_matrices(matrix* A, char* filename) {
 	FILE* mfile = fopen(filename, "r");
 	if (!mfile) {
 		printf("Could not open file: %s\n", filename);
@@ -38,20 +39,14 @@ int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 	// reset linebuf
 	linebuf = first_tok;
 
-	// get B dimensions
-	line_sz = getline(&linebuf, &linebuf_sz, mfile);	
-	first_tok = strsep(&linebuf, " ");
-
-	// get dimensions of second matrix
-	B->height = atoi(first_tok);
-	B->width = atoi(linebuf);
+	// get B dimensions (and ignore them)
+	getline(&linebuf, &linebuf_sz, mfile);	
 
 	// free linebuf 
 	free(first_tok);
 
 	// allocate space for matrix A
-	A->data = (float*) malloc(sizeof(float) * A->height * A->width);
-	B->data = (float*) malloc(sizeof(float) * B->height * B->width);
+	A->data = (double*) malloc(sizeof(double) * A->height * A->width);
 
 	// init line reading for matrix data
 	size_t line_len = A->width * 2 + 64;
@@ -68,29 +63,35 @@ int build_matrices(matrix* A, matrix* B, matrix* C, char* filename) {
 			A->data[i*A->height+j] = atof(first_tok);
 		}
 	}
-
-	// gross, i know. but reset for matrix B
-	free(base);
-	line_len = B->width * 2 + 64;
-	base = malloc(line_len);
-
-	// read in matrix B
-	for (int i = 0; i < B->height; i++) {
-		line_sz = getline(&base, &line_len, mfile);
-		line = base;
-
-		for (int j = 0; j < B->width; j++) {
-			first_tok = strsep(&line, " ");
-			B->data[i*B->height+j] = atof(first_tok);
-		}
-	}
-
 	free(base);
 
-	// build C
-	C->height = A->height;
-	C->width = B->width;
-	C->data = (float*) malloc(sizeof(float) * C->height * C->width);
+	// INVERSE
+
+	int ipiv[A->height+1];
+    lapack_int ret;
+
+    LAPACKE_dgetrf(LAPACK_ROW_MAJOR,
+                          A->height,
+                          A->height,
+                          A_data,
+                          A->height,
+                          ipiv);
+
+
+    LAPACKE_dgetri(LAPACK_COL_MAJOR,
+                       A->height,
+                       A_data,
+                       A->height,
+                       ipiv);
+
+    /*
+    for (int i = 0; i < A->height; i++) {
+    	for (int j = 0; j < A->width; j++) {
+    		printf("%f ", A_data[i*A->height+j]);
+    	}
+    	printf("\n");
+    }
+    */
 
 	return 0;
 }
@@ -111,23 +112,9 @@ int main(int argc, char** argv) {
 	matrix B;
 	matrix C;
 
-	if (build_matrices(&A, &B, &C, argv[1]) < 0) {
+	if (build_and_inverse(&A, argv[1]) < 0) {
 		printf("Could not build matrices\n");
 		return 2;
-	}
-
-	// MULTIPLY
-
-	cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 
-		A->height, B->width, A->width, 1, 
-		A->data, A->height, B->data, B->height, 
-		1, C->data, C->height);
-
-	for (int i = 0; i < C->height; i++) {
-		for (int j = 0; j < C->width; j++) {
-			printf("%f ", C->data[i*C->height+j]);
-		}
-		printf("\n");
 	}
 
 	return 0;
